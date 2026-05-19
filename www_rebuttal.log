@@ -1,0 +1,293 @@
+============================================================                                                                                                                                                                                  
+Sweep_1 TIMING SUMMARY                                                                                                                                                                                                                        
+============================================================                                                                                                                                                                                  
+Total Wall Time: 1549.97s                                                                                                                                                                                                                     
+Total LLM Time:  1343.65s                                                                                                                                                                                                                     
+Total SLM Time:  165.17s                                                                                                                                                                                                                      
+Overhead Time:   41.15s                                                                                                                                                                                                                       
+                                                                                                                                                                                                                                              
+Average per problem:                                                                                                                                                                                                                          
+  Wall Time: 15.500s                                                                                                                                                                                                                          
+  LLM Time:  13.437s                                                                                                                                                                                                                          
+  SLM Time:  1.652s                                        
+============================================================
+PERFORMANCE SUMMARY
+============================================================
+Accuracy: 89.0%
+LLM Token Ratio: 76.8%
+Avg LLM Tokens: 1081.5
+Avg SLM Tokens: 326.6
+Avg Total Tokens: 1408.1
+
+Avg LLM Time per problem: 13.437s
+Avg SLM Time per problem: 1.652s
+Avg Total Time per problem: 15.088s
+
+LLM Time Ratio: 86.7%
+SLM Time Ratio: 10.7%
+Results saved to results/param_sweep/GSM8K_20251130_135213/results.json
+Analysis saved to results/param_sweep/GSM8K_20251130_135213/results_analysis.json
+Summary CSV saved to results/param_sweep/GSM8K_20251130_135213/results_summary.csv
+
+================================================================================
+EXPERIMENT SUMMARY
+================================================================================
+GSM8K Results:
+--------------------------------------------------
+
+Sweep_1:
+  Accuracy: 89.00% (89/100)
+  Avg Wall Time (per problem): 15.50s
+  Avg Total Tokens: 1408.1
+    - Avg LLM Tokens: 1081.5 (76.8%)
+    - Avg SLM Tokens: 326.6 (23.2%)
+
+================================================================================
+TOP CONFIGURATIONS WITH TIMING METRICS
+================================================================================
+
+Rank 1:
+  Accuracy: 0.8900
+  LLM Ratio: 0.7522
+  Efficiency Score: 1.17
+  --- TIMING ---
+  Total Wall Time: 1549.97s
+  Total LLM Time: 1343.65s (86.7%)
+  Total SLM Time: 165.17s (10.7%)
+  Avg LLM Time/problem: 13.437s
+  Avg SLM Time/problem: 1.652s
+  Avg Total Time/problem: 15.088s
+  Parameters: {'target_llm_ratio': 0.8, 'ewma_lambda': 0.05, 'beta_gain': 1.0, 'k_base': 50, 'alpha_severity': 2.0, 'kalman_process_var': 0.1, 'kalman_measurement_var': 0.5, 'L_min': 1.0, 'L_max': 4.0, 'initial_L': 2.0}
+
+================================================================================
+TIMING SUMMARY TABLE
+================================================================================
+Config       Accuracy    LLM Ratio    Wall Time     LLM Time     SLM Time
+--------------------------------------------------------------------------------
+Sweep_1        0.8900       0.7522      1549.97s      1343.65s       165.17s
+
+Results saved to: results/param_sweep/GSM8K_20251130_135213
+
+
+
+
+
+============================================================                                                                                                                                                                                  
+Sweep_1 TIMING SUMMARY                                                                                                                                                                                                                        
+============================================================                                                                                                                                                                                  
+Total Wall Time: 4936.05s                                                                                                                                                                                                                     
+Total LLM Time:  3666.39s                                                                                                                                                                                                                     
+Total SLM Time:  1162.24s                                                                                                                                                                                                                     
+Overhead Time:   107.41s                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                              
+Average per problem:                                                                                                                                                                                                                          
+  Wall Time: 49.360s                                                                                                                                                                                                                          
+  LLM Time:  36.664s                                                                                                                                                                                                                          
+  SLM Time:  11.622s                                                                                                                                                                                                                          
+                     
+============================================================
+PERFORMANCE SUMMARY
+============================================================
+Accuracy: 80.0%         
+LLM Token Ratio: 64.3%
+Avg LLM Tokens: 2185.7     
+Avg SLM Tokens: 1211.1            
+Avg Total Tokens: 3396.8          
+                                                           
+Avg LLM Time per problem: 36.664s
+Avg SLM Time per problem: 11.622s
+Avg Total Time per problem: 48.286s                                                                                                                                                                                                           
+
+LLM Time Ratio: 74.3%                                                                                                  
+SLM Time Ratio: 23.5%
+Results saved to results/param_sweep/MATH_20251130_142708/results.json          
+Analysis saved to results/param_sweep/MATH_20251130_142708/results_analysis.json
+Summary CSV saved to results/param_sweep/MATH_20251130_142708/results_summary.csv
+                                                                                                                       
+================================================================================
+EXPERIMENT SUMMARY                                        
+================================================================================
+
+MATH Results:
+--------------------------------------------------
+
+Sweep_1:
+  Accuracy: 80.00% (80/100)
+  Avg Wall Time (per problem): 49.36s
+  Avg Total Tokens: 3396.8
+    - Avg LLM Tokens: 2185.7 (64.3%)
+    - Avg SLM Tokens: 1211.1 (35.7%)
+
+================================================================================
+TOP CONFIGURATIONS WITH TIMING METRICS
+================================================================================
+
+Rank 1:
+  Accuracy: 0.8000
+  LLM Ratio: 0.7026
+  Efficiency Score: 1.12
+  --- TIMING ---
+  Total Wall Time: 4936.05s
+  Total LLM Time: 3666.39s (74.3%)
+  Total SLM Time: 1162.24s (23.5%)
+  Avg LLM Time/problem: 36.664s
+  Avg SLM Time/problem: 11.622s
+  Avg Total Time/problem: 48.286s
+  Parameters: {'target_llm_ratio': 0.8, 'ewma_lambda': 0.05, 'beta_gain': 1.0, 'k_base': 50, 'alpha_severity': 2.0, 'kalman_process_var': 0.1, 'kalman_measurement_var': 0.5, 'L_min': 1.0, 'L_max': 4.0, 'initial_L': 2.0}
+
+================================================================================
+TIMING SUMMARY TABLE
+================================================================================
+Config       Accuracy    LLM Ratio    Wall Time     LLM Time     SLM Time
+--------------------------------------------------------------------------------
+Sweep_1        0.8000       0.7026      4936.05s      3666.39s      1162.24s
+
+Results saved to: results/param_sweep/MATH_20251130_142708
+
+
+
+
+
+
+
+
+============================================================                                                                                                                                                                                  
+LLM_Only TIMING SUMMARY                                                                                                                                                                                                                       
+============================================================                                                                                                                                                                                  
+Total Wall Time: 1774.21s                                                                                                                                                                                                                     
+Total LLM Time:  1731.00s                                                                                                                                                                                                                     
+Total SLM Time:  0.69s                                                                                                                                                                                                                        
+Overhead Time:   42.52s                                                                                                                                                                                                                       
+                                                                                                                                                                                                                                              
+Average per problem:                                                                                                                                                                                                                          
+  Wall Time: 17.742s                                                                                                                                                                                                                          
+  LLM Time:  17.310s                                                                                                                                                                                                                          
+  SLM Time:  0.007s                                                   
+
+============================================================                                                                                                                                                                                  
+PERFORMANCE SUMMARY                                                                                                                                                                                                                           
+============================================================                                                                                                                                                                                  
+Accuracy: 90.0%                                                                                                                                                                                                                               
+LLM Token Ratio: 93.9%                                                                                                                                                                                                                        
+Avg LLM Tokens: 1347.5                                                                                                                                                                                                                        
+Avg SLM Tokens: 86.9                                                                                                                                                                                                                          
+Avg Total Tokens: 1434.4                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                              
+Avg LLM Time per problem: 17.310s                                                                                                                                                                                                             
+Avg SLM Time per problem: 0.007s                                                                                                                                                                                                              
+Avg Total Time per problem: 17.317s                                                                                                                                                                                                           
+                                                                                                                                                                                                                                              
+LLM Time Ratio: 97.6%                                                                                                                                                                                                                         
+SLM Time Ratio: 0.0%                
+
+============================================================                                                                                                                                                                                  
+SLM_Only TIMING SUMMARY                                                                                                                                                                                                                       
+============================================================                                                                                                                                                                                  
+Total Wall Time: 1500.08s                                                                                                                                                                                                                     
+Total LLM Time:  0.00s                                                                                                                                                                                                                        
+Total SLM Time:  1440.80s                                                                                                                                                                                                                     
+Overhead Time:   59.29s                                                                                                                                                                                                                       
+                                                                                                                                                                                                                                              
+Average per problem:                                                                                                                                                                                                                          
+  Wall Time: 15.001s                                                                                                                                                                                                                          
+  LLM Time:  0.000s                                                                                                                                                                                                                           
+  SLM Time:  14.408s        
+
+============================================================
+PERFORMANCE SUMMARY
+============================================================
+Accuracy: 88.0%
+LLM Token Ratio: 0.0%
+Avg LLM Tokens: 0.0
+Avg SLM Tokens: 2057.6
+Avg Total Tokens: 2057.6
+
+Avg LLM Time per problem: 0.000s
+Avg SLM Time per problem: 14.408s
+Avg Total Time per problem: 14.408s
+
+LLM Time Ratio: 0.0%
+SLM Time Ratio: 96.0%
+
+================================================================================
+BASELINE COMPARISON
+================================================================================
+Method            Accuracy    Wall Time     LLM Time     SLM Time   Avg Tokens
+--------------------------------------------------------------------------------
+LLM_Only            0.9000      1774.21s      1731.00s         0.69s       1434.4
+SLM_Only            0.8800      1500.08s         0.00s      1440.80s       2057.6
+Results saved to results/param_sweep/GSM8K_20251130_140336/detailed_results.json
+Analysis saved to results/param_sweep/GSM8K_20251130_140336/detailed_results_analysis.json
+Summary CSV saved to results/param_sweep/GSM8K_20251130_140336/detailed_results_summary.csv
+
+================================================================================
+EXPERIMENT SUMMARY
+================================================================================
+
+GSM8K Results:
+--------------------------------------------------
+
+LLM_Only:
+  Accuracy: 90.00% (90/100)
+  Avg Wall Time (per problem): 17.74s
+  Avg Total Tokens: 1434.4
+    - Avg LLM Tokens: 1347.5 (93.9%)
+    - Avg SLM Tokens: 86.9 (6.1%)
+
+SLM_Only:
+  Accuracy: 88.00% (88/100)
+  Avg Wall Time (per problem): 15.00s
+  Avg Total Tokens: 2057.6
+    - Avg LLM Tokens: 0.0 (0.0%)
+    - Avg SLM Tokens: 2057.6 (100.0%)
+
+Results saved to: results/param_sweep/GSM8K_20251130_140336
+
+
+============================================================
+PERFORMANCE SUMMARY
+============================================================
+Accuracy: 77.0%
+LLM Token Ratio: 0.0%
+Avg LLM Tokens: 0.0
+Avg SLM Tokens: 3612.3
+Avg Total Tokens: 3612.3
+
+Avg LLM Time per problem: 0.000s
+Avg SLM Time per problem: 31.956s
+Avg Total Time per problem: 31.956s
+
+LLM Time Ratio: 0.0%
+SLM Time Ratio: 96.8%
+
+================================================================================
+BASELINE COMPARISON
+================================================================================
+Method            Accuracy    Wall Time     LLM Time     SLM Time   Avg Tokens
+--------------------------------------------------------------------------------
+LLM_Only            0.8600      5198.46s      5099.13s         0.76s       3206.2
+SLM_Only            0.7700      3300.92s         0.00s      3195.55s       3612.3
+Results saved to results/param_sweep/MATH_20251130_143223/detailed_results.json
+Analysis saved to results/param_sweep/MATH_20251130_143223/detailed_results_analysis.json
+Summary CSV saved to results/param_sweep/MATH_20251130_143223/detailed_results_summary.csv
+
+================================================================================
+EXPERIMENT SUMMARY
+================================================================================
+
+MATH Results:
+--------------------------------------------------
+
+LLM_Only:
+  Accuracy: 86.00% (86/100)
+  Avg Wall Time (per problem): 51.98s
+  Avg Total Tokens: 3206.2
+    - Avg LLM Tokens: 3116.7 (97.2%)
+    - Avg SLM Tokens: 89.5 (2.8%)
+
+SLM_Only:
+  Accuracy: 77.00% (77/100)
+  Avg Wall Time (per problem): 33.01s
+  Avg Total Tokens: 3612.3
+    - Avg LLM Tokens: 0.0 (0.0%)
+    - Avg SLM Tokens: 3612.3 (100.0%)
