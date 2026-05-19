@@ -14,9 +14,13 @@ from typing import Dict, List
 
 from config import (ModelConfig, InferenceState, DE_CASCADE_BATCH_SIZE, GLOBAL_INITIAL_CHUNK_SIZE,
                     GLOBAL_LLM_INTER_CHUNK_SIZE, GLOBAL_MAX_TOKENS, GLOBAL_LAG, GLOBAL_THRESHOLD, TARGET_LLM_TOKEN_RATIO)
-from utils import (OnlineEntropyPeakDetector, calculate_shannon_entropy, extract_answer, is_correct_answer)
+from utils import (
+    OnlineEntropyPeakDetector,
+    calculate_shannon_entropy,
+    evaluate_problem_answer,
+)
 from models import VLLMModel
-from data import build_math_prompt
+from data import build_prompt
 import random
 import csv
 
@@ -53,7 +57,7 @@ class BenchmarkRunner:
 
             active_states = []
             for p in batch_problems:
-                prompt_text = build_math_prompt(p['question'])
+                prompt_text = build_prompt(p)
                 initial_token_ids = self.slm.tokenizer.encode(prompt_text)
                 state = InferenceState(
                     request_id=str(uuid.uuid4()),
@@ -124,8 +128,10 @@ class BenchmarkRunner:
                 for state in active_states:
                     current_total_tokens = state.metrics['llm_tokens'] + state.metrics['slm_tokens']
                     if state.is_finished or current_total_tokens >= GLOBAL_MAX_TOKENS:
-                        predicted_answer = extract_answer(state.full_generation)
-                        is_correct = is_correct_answer(predicted_answer, state.problem['answer'])
+                        predicted_answer, is_correct = evaluate_problem_answer(
+                            state.full_generation,
+                            state.problem,
+                        )
                         current_run_results['total'] += 1
                         if is_correct: current_run_results['correct'] += 1
                         
@@ -156,7 +162,7 @@ class BenchmarkRunner:
         current_run_results = self.results[dataset_name][method_name] = {'correct': 0, 'total': len(problems), 'metrics': [], 'predictions': []}
         model = self.llm if model_type == 'LLM' else self.slm
 
-        prompts = [build_math_prompt(p['question']) for p in problems]
+        prompts = [build_prompt(p) for p in problems]
         start_time = time.time()
         # Reserve some tokens for the prompt to avoid exceeding model max length
         max_gen_tokens = GLOBAL_MAX_TOKENS
@@ -168,8 +174,7 @@ class BenchmarkRunner:
 
         for i, problem in enumerate(problems):
             response = responses[i]
-            predicted_answer = extract_answer(response)
-            is_correct = is_correct_answer(predicted_answer, problem['answer'])
+            predicted_answer, is_correct = evaluate_problem_answer(response, problem)
             if is_correct: current_run_results['correct'] += 1
             
             # ** RESTORED METRICS COLLECTION **
@@ -232,7 +237,7 @@ class BenchmarkRunner:
 
             active_states = []
             for p in batch_problems:
-                prompt_text = build_math_prompt(p['question'])
+                prompt_text = build_prompt(p)
                 initial_token_ids = self.slm.tokenizer.encode(prompt_text)
                 state = InferenceState(
                     request_id=str(uuid.uuid4()), problem=p, prompt=prompt_text,
@@ -291,8 +296,10 @@ class BenchmarkRunner:
                 for state in active_states:
                     current_total_tokens = state.metrics['llm_tokens'] + state.metrics['slm_tokens']
                     if state.is_finished or current_total_tokens >= GLOBAL_MAX_TOKENS:
-                        predicted_answer = extract_answer(state.full_generation)
-                        is_correct = is_correct_answer(predicted_answer, state.problem['answer'])
+                        predicted_answer, is_correct = evaluate_problem_answer(
+                            state.full_generation,
+                            state.problem,
+                        )
                         current_run_results['total'] += 1
                         if is_correct: current_run_results['correct'] += 1
                         state.metrics['total_tokens'] = current_total_tokens

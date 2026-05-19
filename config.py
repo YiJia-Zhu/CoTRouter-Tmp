@@ -26,8 +26,8 @@ TARGET_LLM_TOKEN_RATIO = float(os.getenv('TARGET_LLM_TOKEN_RATIO', '0.3'))
 @dataclass
 class ModelConfig:
     """Configuration for LLM and SLM models"""
-    llm_path: str = "/mnt/8T/xgr/zhuyijia/huggingface_models/DeepSeek-R1-Distill-Qwen-7B"
-    slm_path: str = "/mnt/8T/xgr/shizhenning/model_weights/DeepSeek-R1-Distill-Qwen-1.5B"
+    llm_path: str = "/private/zhenningshi/model_weights/DeepSeek-R1-Distill-Qwen-7B"
+    slm_path: str = "/private/zhenningshi/model_weights/DeepSeek-R1-Distill-Qwen-1.5B"
     llm_gpu_ids: List[int] = None
     slm_gpu_id: int = 0
     llm_tensor_parallel_size: int = 1

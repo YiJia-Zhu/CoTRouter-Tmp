@@ -6,14 +6,22 @@ import re
 from math import isclose
 
 import regex
-from latex2sympy2 import latex2sympy
+try:
+    from latex2sympy2 import latex2sympy
+except ImportError:
+    latex2sympy = None
 from sympy import N, simplify
 from sympy.parsing.latex import parse_latex
 from sympy.parsing.sympy_parser import parse_expr
-from word2number import w2n
+try:
+    from word2number import w2n
+except ImportError:
+    w2n = None
 
 
 def convert_word_number(text: str) -> str:
+    if w2n is None:
+        return text
     try:
         text = str(w2n.word_to_num(text))
     except Exception:
@@ -153,7 +161,7 @@ def strip_answer_string(string):
 
     # remove percentage
     string = string.replace("\\%", "")
-    string = string.replace("\%", "")
+    string = string.replace("\\%", "")
     string = string.replace("%", "")
 
     # " 0." equivalent to " ." and "{0." equivalent to "{." Alternatively, add "0" if "." is the start of the string
@@ -462,6 +470,8 @@ def numeric_equal(prediction: float, reference: float):
 def symbolic_equal(a, b):
     def _parse(s):
         for f in [parse_latex, parse_expr, latex2sympy]:
+            if f is None:
+                continue
             try:
                 return f(s.replace("\\\\", "\\"))
             except Exception:

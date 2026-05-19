@@ -10,8 +10,8 @@ from collections import deque
 import uuid
 
 from config import InferenceState, GLOBAL_MAX_TOKENS
-from utils import calculate_shannon_entropy, extract_answer, is_correct_answer
-from data import build_math_prompt
+from utils import calculate_shannon_entropy, evaluate_problem_answer
+from data import build_prompt
 
 # ===================================================================
 # Kalman Filter Implementation for Complexity Tracking
@@ -273,7 +273,7 @@ def run_cotrouter_experiment(runner, dataset_name: str, problems: List[Dict],
         # Initialize states
         active_states = []
         for p in batch_problems:
-            prompt_text = build_math_prompt(p['question'])
+            prompt_text = build_prompt(p)
             initial_token_ids = runner.slm.tokenizer.encode(prompt_text)
             
             # Create appropriate state based on router type
@@ -356,8 +356,10 @@ def run_cotrouter_experiment(runner, dataset_name: str, problems: List[Dict],
                 current_total_tokens = state.metrics['llm_tokens'] + state.metrics['slm_tokens']
                 if state.is_finished or current_total_tokens >= GLOBAL_MAX_TOKENS:
                     # Evaluate result
-                    predicted_answer = extract_answer(state.full_generation)
-                    is_correct = is_correct_answer(predicted_answer, state.problem['answer'])
+                    predicted_answer, is_correct = evaluate_problem_answer(
+                        state.full_generation,
+                        state.problem,
+                    )
                     current_run_results['total'] += 1
                     if is_correct:
                         current_run_results['correct'] += 1

@@ -5,11 +5,14 @@ mathematical validation, and CUDA device management.
 """
 import os
 import re
+import subprocess
+import sys
+import tempfile
 import numpy as np
 from contextlib import contextmanager
 from collections import deque
 from typing import Dict, List, Optional
-from math_parsing_util import strip_answer_string, math_equal
+from math_parsing_util import strip_answer_string, math_equal, choice_answer_clean
 
 # ===================================================================
 # CUDA Environment Utility
@@ -165,7 +168,7 @@ def extract_answer(pred_str: str, use_last_number: bool = True) -> Optional[str]
                 pred = cleaned_str[-1].upper()
                 return pred
 
-            pattern = "-?\d*\.?\d+"
+            pattern = r"-?\d*\.?\d+"
             pred = re.findall(pattern, pred_str.replace(",", ""))
             if len(pred) >= 1:
                 pred = pred[-1]
@@ -195,3 +198,85 @@ def is_correct_answer(model_answer_str: Optional[str], ground_truth_str: str) ->
     # Check correctness
     correct = math_equal(cleaned_pred, cleaned_ans)
     return correct
+
+
+def extract_choice_answer(pred_str: str) -> Optional[str]:
+    """Extracts a multiple-choice option letter from model output."""
+    if pred_str is None:
+        return None
+    answer = extract_answer(pred_str)
+    if answer:
+        return choice_answer_clean(answer)
+    return choice_answer_clean(pred_str)
+
+
+def extract_python_completion(pred_str: str) -> str:
+    """Extracts the most likely Python completion from model output."""
+    if pred_str is None:
+        return ""
+
+    text = str(pred_str)
+    if "</think>" in text:
+        text = text.split("</think>")[-1]
+
+    fenced_blocks = re.findall(r"```(?:python)?\s*(.*?)```", text, flags=re.DOTALL | re.IGNORECASE)
+    if fenced_blocks:
+        text = fenced_blocks[-1]
+
+    return text.strip("\n")
+
+
+def run_humaneval_tests(response_text: str, problem: Dict) -> bool:
+    """Executes HumanEval tests in a subprocess and returns pass/fail."""
+    completion = extract_python_completion(response_text)
+    entry_point = problem["entry_point"]
+    prompt = problem["question"]
+    prompt_prefix = prompt.split(f"def {entry_point}", 1)[0]
+    has_full_function = re.search(
+        rf"(^|\n)\s*def\s+{re.escape(entry_point)}\s*\(",
+        completion,
+    )
+    if has_full_function:
+        candidate_program = f"{prompt_prefix}{completion}\n"
+    else:
+        candidate_program = f"{prompt}{completion}\n"
+    test_program = f"{candidate_program}\n{problem['test']}\ncheck({entry_point})\n"
+
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False, encoding="utf-8") as tmp_file:
+        tmp_file.write(test_program)
+        tmp_path = tmp_file.name
+
+    try:
+        completed = subprocess.run(
+            [sys.executable, "-I", tmp_path],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return completed.returncode == 0
+    except subprocess.TimeoutExpired:
+        return False
+    finally:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+
+
+def evaluate_problem_answer(response_text: str, problem: Dict):
+    """Returns (predicted_answer, is_correct) for the problem type."""
+    task_type = problem.get("task_type", "math")
+
+    if task_type == "humaneval":
+        predicted_answer = extract_python_completion(response_text)
+        is_correct = run_humaneval_tests(response_text, problem)
+        return predicted_answer, is_correct
+
+    if task_type == "multiple_choice":
+        predicted_answer = extract_choice_answer(response_text)
+        is_correct = is_correct_answer(predicted_answer, problem["answer"])
+        return predicted_answer, is_correct
+
+    predicted_answer = extract_answer(response_text)
+    is_correct = is_correct_answer(predicted_answer, problem["answer"])
+    return predicted_answer, is_correct
