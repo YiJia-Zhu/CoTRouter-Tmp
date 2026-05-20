@@ -21,21 +21,27 @@ class CoTRouterBenchmarkRunner(BenchmarkRunner):
     def run_cotrouter_benchmark(self, dataset_name: str, problems: List[Dict],
                                target_ratios: List[float] = [0.2, 0.3, 0.4, 0.5]):
         """Run CoTRouter with different target LLM ratios"""
+        k_base = 50 if dataset_name in {'MATH', 'AIME', 'AIME24'} else 20
         for ratio in target_ratios:
             router = CoTRouter(
                 target_llm_ratio=ratio,
-                # Default parameters from paper
+                # Default parameters from the paper.
                 kalman_process_var=0.1,
                 kalman_measurement_var=0.5,
-                ewma_lambda=0.1,
+                ewma_lambda=0.05,
                 beta_gain=1.0,
-                k_base=20,
-                alpha_severity=1.0,
+                k_base=k_base,
+                alpha_severity=2.0,
                 L_min=1.0,
                 L_max=4.0,
                 initial_L=2.0
             )
             method_name = f'CoTRouter-R{int(ratio*100)}'
+            print(
+                f"CoTRouter config for {dataset_name}: "
+                f"target={ratio}, ewma_lambda=0.05, beta_gain=1.0, "
+                f"k_base={k_base}, alpha_severity=2.0"
+            )
             run_cotrouter_experiment(self, dataset_name, problems, router, method_name)
     
     def run_random_baseline(self, dataset_name: str, problems: List[Dict],

@@ -9,13 +9,13 @@ set -euo pipefail
 # =========================
 
 # Select datasets here. Valid values: GSM8K MATH AIME AIME24
-DATASETS=(${DATASETS:-GSM8K MATH AIME})
+DATASETS=(${DATASETS:-AIME})
 
 # Select which experiment families to run.
 # true + true  -> CoTRouter + LLM-Only + SLM-Only
 # true + false -> CoTRouter only
 # false + true -> LLM-Only + SLM-Only only
-RUN_COTROUTER="${RUN_COTROUTER:-true}"
+RUN_COTROUTER="${RUN_COTROUTER:-false}"
 RUN_BASELINES="${RUN_BASELINES:-true}"
 
 # Fixed main-experiment target ratio. Override per run if needed by editing here.
@@ -25,11 +25,25 @@ TARGET_RATIOS_AIME=(${TARGET_RATIOS_AIME:-0.8})
 TARGET_RATIOS_AIME24=(${TARGET_RATIOS_AIME24:-0.8})
 
 # Optional sample cap. Leave empty for full datasets.
-NUM_SAMPLES="${NUM_SAMPLES:-}"
+# This controls maximum samples per dataset.
+# NUM_SAMPLES="${NUM_SAMPLES:-}"
+NUM_SAMPLES="${NUM_SAMPLES:-100}"
+
+
+# Batch sizes for CoTRouter and LLM-Only/SLM-Only baselines.
+COTROUTER_BATCH_SIZE="${COTROUTER_BATCH_SIZE:-1}"
+BASELINE_BATCH_SIZE="${BASELINE_BATCH_SIZE:-${COTROUTER_BATCH_SIZE}}"
+
+# Per-dataset max generated/context tokens. AIME needs room for the long traces
+# reported in the paper; these values are passed to Python as GLOBAL_MAX_TOKENS.
+MAX_TOKENS_GSM8K="${MAX_TOKENS_GSM8K:-8000}"
+MAX_TOKENS_MATH="${MAX_TOKENS_MATH:-8000}"
+MAX_TOKENS_AIME="${MAX_TOKENS_AIME:-16000}"
+MAX_TOKENS_AIME24="${MAX_TOKENS_AIME24:-16000}"
 
 # Optional manual GPU pairs. Leave empty to auto-discover idle GPUs with nvidia-smi.
 # Example: GPU_PAIRS="1:2 3:4 5:6"
-GPU_PAIRS="${GPU_PAIRS:-}"
+GPU_PAIRS="${GPU_PAIRS:-6:1}"
 
 # vLLM memory utilization is fixed here as requested.
 LLM_GPU_MEMORY_UTILIZATION="0.71"
@@ -41,6 +55,9 @@ SLM_GPU_MEMORY_UTILIZATION="0.20"
 
 LLM_PATH="${LLM_PATH:-/private/zhenningshi/model_weights/DeepSeek-R1-Distill-Qwen-7B}"
 SLM_PATH="${SLM_PATH:-/private/zhenningshi/model_weights/DeepSeek-R1-Distill-Qwen-1.5B}"
+RUN_LABEL="${RUN_LABEL:-DeepSeek 7B + 1.5B}"
+RUN_DIR_PREFIX="${RUN_DIR_PREFIX:-parallel_core}"
+RUN_USAGE_NAME="${RUN_USAGE_NAME:-run_deepseek_core_datasets_parallel.sh}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
@@ -62,18 +79,21 @@ export COTROUTER_DATASET_DIR
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     cat <<EOF
-Usage: bash run_deepseek_core_datasets_parallel.sh
+Usage: bash ${RUN_USAGE_NAME}
 
 Top-of-file knobs:
-  DATASETS=(GSM8K MATH AIME)
-  RUN_COTROUTER=true
-  RUN_BASELINES=true
-  TARGET_RATIOS_GSM8K=(0.8)
-  TARGET_RATIOS_MATH=(0.8)
-  TARGET_RATIOS_AIME=(0.8)
+  DATASETS=(${DATASETS[*]})
+  RUN_COTROUTER=${RUN_COTROUTER}
+  RUN_BASELINES=${RUN_BASELINES}
+  TARGET_RATIOS_GSM8K=(${TARGET_RATIOS_GSM8K[*]})
+  TARGET_RATIOS_MATH=(${TARGET_RATIOS_MATH[*]})
+  TARGET_RATIOS_AIME=(${TARGET_RATIOS_AIME[*]})
 
 Environment overrides:
   NUM_SAMPLES=20
+  COTROUTER_BATCH_SIZE=150
+  BASELINE_BATCH_SIZE=150
+  MAX_TOKENS_AIME=16000
   GPU_PAIRS="1:2 3:4 5:6"
   PYTHON_BIN="/opt/conda/envs/thinkleap/bin/python"
   LLM_PATH="${LLM_PATH}"
@@ -148,6 +168,26 @@ target_ratios_for_dataset() {
     esac
 }
 
+max_tokens_for_dataset() {
+    case "$1" in
+        GSM8K)
+            echo "${MAX_TOKENS_GSM8K}"
+            ;;
+        MATH)
+            echo "${MAX_TOKENS_MATH}"
+            ;;
+        AIME)
+            echo "${MAX_TOKENS_AIME}"
+            ;;
+        AIME24)
+            echo "${MAX_TOKENS_AIME24}"
+            ;;
+        *)
+            echo "${GLOBAL_MAX_TOKENS:-8000}"
+            ;;
+    esac
+}
+
 build_gpu_pairs() {
     if [[ -n "${GPU_PAIRS}" ]]; then
         return
@@ -186,12 +226,12 @@ build_gpu_pairs
 read -r -a PAIR_ARRAY <<< "${GPU_PAIRS}"
 
 RUN_ID="$(date +"%Y%m%d_%H%M%S")"
-PARALLEL_DIR="results/parallel_core_${RUN_ID}"
+PARALLEL_DIR="results/${RUN_DIR_PREFIX}_${RUN_ID}"
 LOG_DIR="${PARALLEL_DIR}/logs"
 mkdir -p "${LOG_DIR}"
 
 echo "================================================================"
-echo "Running DeepSeek 7B + 1.5B core datasets in parallel"
+echo "Running ${RUN_LABEL} core datasets in parallel"
 echo "LLM: ${LLM_PATH}"
 echo "SLM: ${SLM_PATH}"
 echo "Dataset dir: ${COTROUTER_DATASET_DIR}"
@@ -199,6 +239,10 @@ echo "Python: ${PYTHON_BIN}"
 echo "Experiment: ${EXPERIMENT} (RUN_COTROUTER=${RUN_COTROUTER}, RUN_BASELINES=${RUN_BASELINES})"
 echo "Datasets: ${DATASETS[*]}"
 echo "GPU pairs: ${GPU_PAIRS}"
+echo "Num samples: ${NUM_SAMPLES:-full}"
+echo "CoTRouter batch size: ${COTROUTER_BATCH_SIZE}"
+echo "Baseline batch size: ${BASELINE_BATCH_SIZE}"
+echo "Max tokens: GSM8K=${MAX_TOKENS_GSM8K}, MATH=${MAX_TOKENS_MATH}, AIME=${MAX_TOKENS_AIME}, AIME24=${MAX_TOKENS_AIME24}"
 echo "vLLM utilization: LLM=${LLM_GPU_MEMORY_UTILIZATION}, SLM=${SLM_GPU_MEMORY_UTILIZATION}"
 echo "Logs: ${LOG_DIR}"
 echo "================================================================"
@@ -211,8 +255,10 @@ run_dataset() {
     local slm_gpu="${pair##*:}"
     local sample_arg=()
     local target_ratios
+    local max_tokens
 
     target_ratios="$(target_ratios_for_dataset "${dataset}")"
+    max_tokens="$(max_tokens_for_dataset "${dataset}")"
 
     if [[ -n "${NUM_SAMPLES}" ]]; then
         sample_arg=(--num_samples "${NUM_SAMPLES}")
@@ -226,9 +272,13 @@ run_dataset() {
         echo "SLM GPU: ${slm_gpu}"
         echo "Experiment: ${EXPERIMENT}"
         echo "Target ratios: ${target_ratios}"
+        echo "Num samples: ${NUM_SAMPLES:-full}"
+        echo "CoTRouter batch size: ${COTROUTER_BATCH_SIZE}"
+        echo "Baseline batch size: ${BASELINE_BATCH_SIZE}"
+        echo "GLOBAL_MAX_TOKENS: ${max_tokens}"
         echo "vLLM utilization: LLM=${LLM_GPU_MEMORY_UTILIZATION}, SLM=${SLM_GPU_MEMORY_UTILIZATION}"
         echo "Started: $(date)"
-        "${PYTHON_BIN}" cotrouter_main.py \
+        GLOBAL_MAX_TOKENS="${max_tokens}" "${PYTHON_BIN}" cotrouter_main.py \
             --dataset "${dataset}" \
             --experiment "${EXPERIMENT}" \
             --llm_path "${LLM_PATH}" \
@@ -238,6 +288,8 @@ run_dataset() {
             --llm_gpu_memory_utilization "${LLM_GPU_MEMORY_UTILIZATION}" \
             --slm_gpu_memory_utilization "${SLM_GPU_MEMORY_UTILIZATION}" \
             --target_ratios ${target_ratios} \
+            --cotrouter_batch_size "${COTROUTER_BATCH_SIZE}" \
+            --baseline_batch_size "${BASELINE_BATCH_SIZE}" \
             --output_dir "${PARALLEL_DIR}/${dataset}" \
             "${sample_arg[@]}"
         echo "Finished: $(date)"
@@ -309,11 +361,16 @@ done
 
 cat > "${PARALLEL_DIR}/summary.txt" <<EOF
 Parallel core run: ${RUN_ID}
+Run label: ${RUN_LABEL}
 Experiment: ${EXPERIMENT}
 RUN_COTROUTER: ${RUN_COTROUTER}
 RUN_BASELINES: ${RUN_BASELINES}
 Datasets: ${DATASETS[*]}
 GPU pairs: ${GPU_PAIRS}
+Num samples: ${NUM_SAMPLES:-full}
+CoTRouter batch size: ${COTROUTER_BATCH_SIZE}
+Baseline batch size: ${BASELINE_BATCH_SIZE}
+Max tokens: GSM8K=${MAX_TOKENS_GSM8K}, MATH=${MAX_TOKENS_MATH}, AIME=${MAX_TOKENS_AIME}, AIME24=${MAX_TOKENS_AIME24}
 Python: ${PYTHON_BIN}
 LLM: ${LLM_PATH}
 SLM: ${SLM_PATH}
@@ -349,7 +406,7 @@ else:
 PY
 
 echo "================================================================"
-echo "Parallel core run complete. Logs: ${LOG_DIR}"
+echo "Parallel ${RUN_LABEL} core run complete. Logs: ${LOG_DIR}"
 echo "Summary: ${PARALLEL_DIR}/summary.txt"
 echo "Merged CSV: ${PARALLEL_DIR}/merged_results_summary.csv"
 echo "================================================================"

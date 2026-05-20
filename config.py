@@ -10,7 +10,7 @@ import os
 # ===================================================================
 # Global Configuration
 # ===================================================================
-GLOBAL_MAX_TOKENS = 8000
+GLOBAL_MAX_TOKENS = int(os.getenv('GLOBAL_MAX_TOKENS', '8000'))
 GLOBAL_THRESHOLD = float(os.getenv('GLOBAL_THRESHOLD', '1.0'))
 GLOBAL_INITIAL_CHUNK_SIZE = int(os.getenv('GLOBAL_INITIAL_CHUNK_SIZE', '16'))
 GLOBAL_LLM_INTER_CHUNK_SIZE = int(os.getenv('GLOBAL_LLM_INTER_CHUNK_SIZE', '10'))

@@ -358,7 +358,7 @@ def run_cotrouter_experiment(runner, dataset_name: str, problems: List[Dict],
                     # Accumulate LLM time for this state
                     state.metrics['llm_time'] += time_per_state
                     
-                    if token_id in [runner.llm.eos_token_id, runner.slm.eos_token_id]:
+                    if token_id == runner.llm.eos_token_id:
                         state.is_finished = True
                         continue
                     
@@ -396,7 +396,7 @@ def run_cotrouter_experiment(runner, dataset_name: str, problems: List[Dict],
                     # Accumulate SLM time for this state
                     state.metrics['slm_time'] += time_per_state
                     
-                    if token_id in [runner.slm.eos_token_id, runner.llm.eos_token_id]:
+                    if token_id == runner.slm.eos_token_id:
                         state.is_finished = True
                         continue
                     

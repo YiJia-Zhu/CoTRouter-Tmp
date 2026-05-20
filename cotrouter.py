@@ -7,6 +7,7 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 from collections import deque
+import os
 import uuid
 
 from config import InferenceState, GLOBAL_MAX_TOKENS
@@ -249,10 +250,39 @@ class PeriodicRouter:
 # Unified Runner for CoTRouter and Baselines
 # ===================================================================
 
-def run_cotrouter_experiment(runner, dataset_name: str, problems: List[Dict], 
-                           router, method_name: str, batch_size: int = 150):
+CONTEXT_CHECK_MARGIN = int(os.getenv('COTROUTER_CONTEXT_CHECK_MARGIN', '3000'))
+CONTEXT_GENERATION_RESERVE = int(os.getenv('COTROUTER_CONTEXT_GENERATION_RESERVE', '1'))
+
+
+def _filter_context_ready_states(states, model, model_name: str) -> List[InferenceState]:
+    """Drop states that are too close to the selected model's vLLM context limit."""
+    ready_states = []
+    context_stop_at = GLOBAL_MAX_TOKENS - CONTEXT_GENERATION_RESERVE
+
+    for state in states:
+        current_total_tokens = state.metrics['llm_tokens'] + state.metrics['slm_tokens']
+        if current_total_tokens < GLOBAL_MAX_TOKENS - CONTEXT_CHECK_MARGIN:
+            ready_states.append(state)
+            continue
+
+        context_tokens = len(model.tokenizer.encode(state.prompt + state.full_generation))
+        state.metrics[f'{model_name}_context_tokens'] = context_tokens
+        if context_tokens >= context_stop_at:
+            state.is_finished = True
+            state.metrics['context_limit_stop_model'] = model_name
+            state.metrics['context_limit_tokens'] = context_tokens
+        else:
+            ready_states.append(state)
+
+    return ready_states
+
+def run_cotrouter_experiment(runner, dataset_name: str, problems: List[Dict],
+                           router, method_name: str, batch_size: int = None):
     """Run experiment with specified router"""
     print(f"\nRunning {method_name} on {dataset_name}" + "\n" + "="*50)
+    if batch_size is None:
+        batch_size = int(getattr(runner, 'cotrouter_batch_size', 150))
+    print(f"CoTRouter batch size: {batch_size}")
     
     runner.results[dataset_name] = runner.results.get(dataset_name, {})
     current_run_results = runner.results[dataset_name][method_name] = {
@@ -310,11 +340,13 @@ def run_cotrouter_experiment(runner, dataset_name: str, problems: List[Dict],
             
             # Process LLM states
             if llm_states:
+                llm_states = _filter_context_ready_states(llm_states, runner.llm, 'llm')
+            if llm_states:
                 llm_prompts = [s.prompt + s.full_generation for s in llm_states]
                 llm_results = runner.llm.generate_one_token(prompts=llm_prompts)
                 
                 for state, (token, token_id, logprobs) in zip(llm_states, llm_results):
-                    if token_id in [runner.llm.eos_token_id, runner.slm.eos_token_id]: # or not token
+                    if token_id == runner.llm.eos_token_id:
                         state.is_finished = True
                         continue
                     
@@ -331,11 +363,13 @@ def run_cotrouter_experiment(runner, dataset_name: str, problems: List[Dict],
             
             # Process SLM states
             if slm_states:
+                slm_states = _filter_context_ready_states(slm_states, runner.slm, 'slm')
+            if slm_states:
                 slm_prompts = [s.prompt + s.full_generation for s in slm_states]
                 slm_results = runner.slm.generate_one_token(prompts=slm_prompts)
                 
                 for state, (token, token_id, logprobs) in zip(slm_states, slm_results):
-                    if token_id in [runner.slm.eos_token_id, runner.llm.eos_token_id]: # or not token
+                    if token_id == runner.slm.eos_token_id:
                         state.is_finished = True
                         continue
                     

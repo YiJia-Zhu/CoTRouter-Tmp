@@ -96,6 +96,10 @@ def main():
                        help='Number of samples to use (None for full dataset)')
     parser.add_argument('--output_dir', type=str, default=None,
                        help='Directory to save results. Defaults to a unique timestamped directory.')
+    parser.add_argument('--cotrouter_batch_size', type=int, default=150,
+                       help='Batch size for CoTRouter main experiments')
+    parser.add_argument('--baseline_batch_size', type=int, default=150,
+                       help='Batch size for LLM-Only and SLM-Only baseline experiments')
     parser.add_argument('--llm_gpu_memory_utilization', type=float, default=0.71,
                        help='vLLM GPU memory utilization for the LLM')
     parser.add_argument('--slm_gpu_memory_utilization', type=float, default=0.20,
@@ -134,6 +138,8 @@ def main():
     
     # Initialize runner
     runner = CoTRouterBenchmarkRunner(config)
+    runner.cotrouter_batch_size = args.cotrouter_batch_size
+    runner.baseline_batch_size = args.baseline_batch_size
     runner.initialize_models()
     
     # Load datasets

@@ -110,7 +110,7 @@ class BenchmarkRunner:
                     # **关键改动**: 使用 prompts 参数而不是 prompt_token_ids
                     slm_results = self.slm.generate_one_token(prompts=slm_prompts)
                     for state, (token, token_id, logprobs) in zip(slm_states, slm_results):
-                        if token_id in [self.slm.eos_token_id, self.llm.eos_token_id]: # or not token
+                        if token_id == self.slm.eos_token_id:
                             state.is_finished = True
                             continue
                         entropy = calculate_shannon_entropy(logprobs, self.slm.vocab_size)
@@ -162,11 +162,21 @@ class BenchmarkRunner:
         current_run_results = self.results[dataset_name][method_name] = {'correct': 0, 'total': len(problems), 'metrics': [], 'predictions': []}
         model = self.llm if model_type == 'LLM' else self.slm
 
-        prompts = [build_prompt(p) for p in problems]
+        batch_size = int(getattr(self, 'baseline_batch_size', 150))
+        print(f"{method_name} batch size: {batch_size}")
         start_time = time.time()
         # Reserve some tokens for the prompt to avoid exceeding model max length
         max_gen_tokens = GLOBAL_MAX_TOKENS
-        responses = model.generate(prompts, max_tokens=max_gen_tokens)
+        responses = []
+        prompts = []
+        total_batches = (len(problems) + batch_size - 1) // batch_size
+        for batch_idx in range(total_batches):
+            print(f"\n{'='*20} Baseline Batch {batch_idx + 1}/{total_batches} {'='*20}")
+            batch_start = batch_idx * batch_size
+            batch_end = min((batch_idx + 1) * batch_size, len(problems))
+            batch_prompts = [build_prompt(p) for p in problems[batch_start:batch_end]]
+            prompts.extend(batch_prompts)
+            responses.extend(model.generate(batch_prompts, max_tokens=max_gen_tokens))
         total_wall_time = time.time() - start_time
         avg_time = total_wall_time / len(problems) if problems else 0
 
@@ -283,7 +293,7 @@ class BenchmarkRunner:
                         token_text = slm_single_tokens[i]
                         try:
                            token_id = self.slm.tokenizer.encode(token_text)[0]
-                           if token_id in [self.slm.eos_token_id, self.llm.eos_token_id]:
+                           if token_id == self.slm.eos_token_id:
                                 state.is_finished = True
                                 continue
                            state.token_ids.append(token_id)
